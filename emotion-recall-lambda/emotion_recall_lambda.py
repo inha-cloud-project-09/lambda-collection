@@ -227,13 +227,28 @@ def lambda_handler(event, context):
     connection = None
     
     try:
-        # 입력값 검증
-        user_id = event.get('userId')
-        current_text = event.get('text')
-        emotion_vector = event.get('emotionVector')
-        is_emotional = event.get('isEmotional', True)
+        print(f"수신된 이벤트: {json.dumps(event, ensure_ascii=False)}")
         
-        if not user_id or not current_text or not emotion_vector:
+        # API Gateway에서 오는 경우와 직접 호출되는 경우 구분
+        if 'body' in event and event['body']:
+            # API Gateway에서 호출된 경우
+            if isinstance(event['body'], str):
+                body = json.loads(event['body'])
+            else:
+                body = event['body']
+            
+            user_id = body.get('userId')
+            text = body.get('text')
+            emotion_vector = body.get('emotionVector')
+            is_emotional = body.get('isEmotional', True)
+        else:
+            # 직접 호출된 경우 (기존 로직)
+            user_id = event.get('userId')
+            text = event.get('text')
+            emotion_vector = event.get('emotionVector')
+            is_emotional = event.get('isEmotional', True)
+        
+        if not user_id or not text or not emotion_vector:
             return {
                 'statusCode': 400,
                 'body': json.dumps({
