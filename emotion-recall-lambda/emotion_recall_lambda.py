@@ -331,7 +331,9 @@ def lambda_handler(event, context):
         
     finally:
         if connection:
-            connection.close()def lambda_handler(event, context):
+            connection.close()
+
+def lambda_handler(event, context):
     """Lambda 메인 핸들러"""
     connection = None
     
