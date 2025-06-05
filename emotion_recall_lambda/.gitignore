@@ -1,0 +1,28 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment
+bin/
+lambda_env/
+lib/
+lib64/
+include/
+
+# Python packages
+boto3/
+botocore/
+dateutil/
+jmespath/
+pymysql/
+s3transfer/
+urllib3/
+*.dist-info/
+
+# Zip deployment package
+*.zip
+
+# Misc
+.DS_Store
+*.log
