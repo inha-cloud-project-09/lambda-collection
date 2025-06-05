@@ -1,0 +1,41 @@
+# Python 기본
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# 패키지 설치 디렉토리
+boto3*/
+botocore*/
+jmespath*/
+pymysql/
+PyMySQL-*.dist-info/
+numpy*/
+numpy-*.dist-info/
+s3transfer*/
+s3transfer-*.dist-info/
+six.py
+six-*.dist-info/
+dateutil/
+python_dateutil-*.dist-info/
+urllib3*/
+urllib3-*.dist-info/
+
+# 배포 파일
+*.zip
+
+# VSCode
+.vscode/
+
+# macOS
+.DS_Store
+
+# 기타 임시 파일
+*.swp
+*.bak
