@@ -108,7 +108,7 @@ def find_similar_diaries(current_emotion_vector, past_diaries):
     similarities.sort(key=lambda x: x['similarity'], reverse=True)
     return similarities[:5]
 
-def create_bedrock_prompt(current_text, similar_diaries, is_emotional):
+def create_bedrock_prompt(text, similar_diaries, is_emotional):
     """Bedrock Claude 호출을 위한 프롬프트 생성"""
     
     # 과거 유사한 일기들 텍스트 형식으로 구성
@@ -165,7 +165,7 @@ def create_bedrock_prompt(current_text, similar_diaries, is_emotional):
 
 [입력 데이터]
 현재 상황: \"\"\"
-{current_text}
+{text}
 \"\"\"
 
 과거 유사한 일기들 (총 {len(similar_diaries)}개): \"\"\"
@@ -302,7 +302,116 @@ def lambda_handler(event, context):
             }
         
         # Bedrock 프롬프트 생성
-        prompt = create_bedrock_prompt(current_text, similar_diaries, is_emotional)
+        prompt = create_bedrock_prompt(text, similar_diaries, is_emotional)
+        
+        # Claude 호출하여 회고 생성
+        recall_summaries = call_bedrock_claude(prompt)
+        
+        print(f"회고 분석 완료: user_id={user_id}, 생성된 회고 수={len(recall_summaries)}")
+        
+        return {
+            'statusCode': 200,
+            'body': json.dumps({
+                'recallSummaries': recall_summaries
+            }, ensure_ascii=False)
+        }
+        
+    except Exception as e:
+        print(f"오류 발생: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        
+        return {
+            'statusCode': 500,
+            'body': json.dumps({
+                'error': '회고 생성 중 오류가 발생했습니다',
+                'details': str(e)
+            }, ensure_ascii=False)
+        }
+        
+    finally:
+        if connection:
+            connection.close()def lambda_handler(event, context):
+    """Lambda 메인 핸들러"""
+    connection = None
+    
+    try:
+        print(f"수신된 이벤트: {json.dumps(event, ensure_ascii=False)}")
+        
+        # API Gateway에서 오는 경우와 직접 호출되는 경우 구분
+        if 'body' in event and event['body']:
+            # API Gateway에서 호출된 경우
+            if isinstance(event['body'], str):
+                body = json.loads(event['body'])
+            else:
+                body = event['body']
+            
+            user_id = body.get('userId')
+            text = body.get('text')
+            emotion_vector = body.get('emotionVector')
+            is_emotional = body.get('isEmotional', True)
+        else:
+            # 직접 호출된 경우 (기존 로직)
+            user_id = event.get('userId')
+            text = event.get('text')
+            emotion_vector = event.get('emotionVector')
+            is_emotional = event.get('isEmotional', True)
+        
+        if not user_id or not text or not emotion_vector:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({
+                    'error': '필수 입력값이 누락되었습니다',
+                    'required': ['userId', 'text', 'emotionVector']
+                }, ensure_ascii=False)
+            }
+        
+        # emotion_vector 검증
+        if len(emotion_vector) != 10:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({
+                    'error': 'emotion_vector는 10개 요소를 가져야 합니다'
+                }, ensure_ascii=False)
+            }
+        
+        print(f"회고 분석 시작: user_id={user_id}")
+        
+        # DB 연결
+        connection = get_db_connection()
+        
+        # 과거 일기 조회
+        past_diaries = get_past_diaries(connection, user_id)
+        
+        if not past_diaries:
+            return {
+                'statusCode': 200,
+                'body': json.dumps({
+                    'recallSummaries': {
+                        "20240101": "아직 충분한 일기 데이터가 없어 회고를 생성할 수 없습니다.",
+                        "20240102": "더 많은 일기를 작성하신 후 다시 시도해주세요.",
+                        "20240103": "감정 패턴 분석을 위해 지속적인 기록이 필요합니다."
+                    }
+                }, ensure_ascii=False)
+            }
+        
+        # 유사한 일기 찾기
+        similar_diaries = find_similar_diaries(emotion_vector, past_diaries)
+        
+        if not similar_diaries:
+            return {
+                'statusCode': 200,
+                'body': json.dumps({
+                    'recallSummaries': {
+                        "20240101": "유사한 감정의 과거 일기를 찾을 수 없습니다.",
+                        "20240102": "현재 감정 상태는 새로운 경험인 것 같습니다.",
+                        "20240103": "이 감정을 기록하여 향후 회고 자료로 활용해보세요."
+                    }
+                }, ensure_ascii=False)
+            }
+        
+        # Bedrock 프롬프트 생성
+        prompt = create_bedrock_prompt(text, similar_diaries, is_emotional)
         
         # Claude 호출하여 회고 생성
         recall_summaries = call_bedrock_claude(prompt)
