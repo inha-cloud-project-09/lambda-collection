@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment
+.venv/
+env/
+venv/
+lambda_env/
+
+# Packages
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# AWS Lambda package artifacts
+*.zip
+
+# VSCode settings
+.vscode/
+
+# OS/macOS files
+.DS_Store
+
+# Python dependency metadata
+*.dist-info/
