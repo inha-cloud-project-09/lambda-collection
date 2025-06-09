@@ -76,21 +76,29 @@ def get_user_recent_emotion_vector(user_id):
         conn.close()
 
 def find_similar_users(user_id, user_vector, top_k=3):
-    """유사한 감정의 사용자들 찾기"""
+    """유사한 감정의 사용자들 찾기 - 유저당 최대 1개"""
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # 다른 사용자들의 최근 감정벡터 조회
+            # 각 사용자별로 가장 최근 일기 1개씩만 조회
             cursor.execute("""
-            SELECT DISTINCT d.user_id, d.emotion_vector, d.id as diary_id, d.created_at, d.summary
-            FROM diaries d
-            WHERE d.user_id != %s 
-              AND d.emotion_vector IS NOT NULL 
-              AND d.analysis_status = 'completed'
-              AND d.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            ORDER BY d.created_at DESC
-            LIMIT 50
-            """, (user_id,))
+            SELECT d1.user_id, d1.emotion_vector, d1.id as diary_id, d1.created_at, d1.summary
+            FROM diaries d1
+            INNER JOIN (
+                SELECT user_id, MAX(created_at) as max_date
+                FROM diaries 
+                WHERE user_id != %s 
+                  AND emotion_vector IS NOT NULL 
+                  AND analysis_status = 'completed'
+                  AND summary IS NOT NULL
+                  AND summary != ''
+                  AND summary != '일기 분석 실패'
+                  AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                GROUP BY user_id
+            ) d2 ON d1.user_id = d2.user_id AND d1.created_at = d2.max_date
+            WHERE d1.user_id != %s
+            ORDER BY d1.created_at DESC
+            """, (user_id, user_id))
             
             results = cursor.fetchall()
             similarities = []
@@ -104,9 +112,9 @@ def find_similar_users(user_id, user_vector, top_k=3):
                         similarities.append({
                             'user_id': row['user_id'],
                             'diary_id': row['diary_id'],
-                            'summary': row['summary'] or '',
+                            'summary': row['summary'],
                             'created_at': str(row['created_at']),
-                            'similarity': float(similarity)  # 정렬용
+                            'similarity': float(similarity)
                         })
                 except (json.JSONDecodeError, TypeError) as e:
                     print(f"벡터 파싱 오류: {str(e)}")
@@ -134,20 +142,29 @@ def find_similar_users(user_id, user_vector, top_k=3):
         conn.close()
 
 def find_opposite_users(user_id, user_vector, top_k=3):
-    """반대 감정의 사용자들 찾기"""
+    """반대 감정의 사용자들 찾기 - 유저당 최대 1개"""
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
+            # 각 사용자별로 가장 최근 일기 1개씩만 조회
             cursor.execute("""
-            SELECT DISTINCT d.user_id, d.emotion_vector, d.id as diary_id, d.created_at, d.summary
-            FROM diaries d
-            WHERE d.user_id != %s 
-              AND d.emotion_vector IS NOT NULL 
-              AND d.analysis_status = 'completed'
-              AND d.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            ORDER BY d.created_at DESC
-            LIMIT 50
-            """, (user_id,))
+            SELECT d1.user_id, d1.emotion_vector, d1.id as diary_id, d1.created_at, d1.summary
+            FROM diaries d1
+            INNER JOIN (
+                SELECT user_id, MAX(created_at) as max_date
+                FROM diaries 
+                WHERE user_id != %s 
+                  AND emotion_vector IS NOT NULL 
+                  AND analysis_status = 'completed'
+                  AND summary IS NOT NULL
+                  AND summary != ''
+                  AND summary != '일기 분석 실패'
+                  AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                GROUP BY user_id
+            ) d2 ON d1.user_id = d2.user_id AND d1.created_at = d2.max_date
+            WHERE d1.user_id != %s
+            ORDER BY d1.created_at DESC
+            """, (user_id, user_id))
             
             results = cursor.fetchall()
             similarities = []
@@ -161,9 +178,9 @@ def find_opposite_users(user_id, user_vector, top_k=3):
                         similarities.append({
                             'user_id': row['user_id'],
                             'diary_id': row['diary_id'],
-                            'summary': row['summary'] or '',
+                            'summary': row['summary'],
                             'created_at': str(row['created_at']),
-                            'similarity': float(similarity)  # 정렬용
+                            'similarity': float(similarity)
                         })
                 except (json.JSONDecodeError, TypeError) as e:
                     print(f"벡터 파싱 오류: {str(e)}")
