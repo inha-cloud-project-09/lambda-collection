@@ -1,0 +1,26 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Lambda 배포용 zip 파일
+*.zip
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Installed packages (boto3 등)
+bin/
+boto3/
+botocore/
+dateutil/
+jmespath/
+pymysql/
+s3transfer/
+urllib3/
+six.py
+
