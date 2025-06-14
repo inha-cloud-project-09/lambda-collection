@@ -1,0 +1,45 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Lambda dependencies
+*.dist-info/
+*.egg-info/
+*.eggs/
+bin/
+lib/
+lib64/
+
+# OS/IDE 관련
+.DS_Store
+.vscode/
+.idea/
+
+# Python virtual env
+.env/
+.venv/
+venv/
+ENV/
+env/
+
+# AWS specific (optional)
+.aws-sam/
+
+# Byte-compiled files
+*.log
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore package folders if using Lambda zip upload
+boto3/
+botocore/
+dateutil/
+jmespath/
+s3transfer/
+PyMySQL/
+six.py
+urllib3/
